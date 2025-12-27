@@ -1,0 +1,192 @@
+/* ========= utils ========= */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+const safeOn = (el, type, fn) => {
+  if (el) el.addEventListener(type, fn);
+};
+
+const todayIso = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+};
+
+const uid = (p) => `${p}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+
+/* ========= state ========= */
+let taskState = { version: 1, updatedAt: new Date().toISOString(), tasks: [] };
+let financeState = { version: 1, updatedAt: new Date().toISOString(), payments: [] };
+
+/* ========= JSON load (safe) ========= */
+async function loadJson(path, fallback){
+  try{
+    const r = await fetch(path, { cache: "no-store" });
+    if(!r.ok) throw new Error("fetch failed");
+    return await r.json();
+  }catch{
+    return fallback;
+  }
+}
+
+/* ========= tabs ========= */
+function initTabs(){
+  const tabs = $$(".tab");
+  const panes = $$(".tabpane");
+
+  tabs.forEach(tab => {
+    safeOn(tab, "click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      panes.forEach(p => p.classList.remove("show"));
+      tab.classList.add("active");
+      const id = `#tab-${tab.dataset.tab}`;
+      $(id)?.classList.add("show");
+    });
+  });
+}
+
+/* ========= tasks ========= */
+function renderTasks(){
+  const list = $("#list");
+  const stats = $("#stats");
+  if(!list || !stats) return;
+
+  list.innerHTML = "";
+  stats.textContent = `全 ${taskState.tasks.length} 件`;
+
+  taskState.tasks.forEach(t => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div class="item-main">
+        <strong>${t.title}</strong>
+        <span class="muted">${t.assignee || ""}</span>
+      </div>
+      <button class="btn ghost" data-id="${t.id}">削除</button>
+    `;
+    list.appendChild(div);
+
+    safeOn(div.querySelector("button"), "click", () => {
+      taskState.tasks = taskState.tasks.filter(x => x.id !== t.id);
+      renderTasks();
+    });
+  });
+}
+
+function initTaskForm(){
+  const form = $("#taskForm");
+  if(!form) return;
+
+  safeOn(form, "submit", (e) => {
+    e.preventDefault();
+    const title = $("#fTitle")?.value?.trim();
+    if(!title) return;
+
+    taskState.tasks.push({
+      id: uid("task"),
+      title,
+      assignee: $("#fAssignee")?.value || "",
+      category: $("#fCategory")?.value || "",
+      due: $("#fDue")?.value || "",
+      priority: $("#fPriority")?.value || "中",
+      note: $("#fNote")?.value || "",
+      createdAt: new Date().toISOString()
+    });
+
+    form.reset();
+    renderTasks();
+  });
+}
+
+/* ========= finance ========= */
+function renderFinance(){
+  const list = $("#payList");
+  const stats = $("#financeStats");
+  if(!list || !stats) return;
+
+  list.innerHTML = "";
+  stats.textContent = `全 ${financeState.payments.length} 件`;
+
+  financeState.payments.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div class="item-main">
+        <strong>¥${p.amount}</strong>
+        <span class="muted">${p.payer}</span>
+      </div>
+      <button class="btn ghost" data-id="${p.id}">削除</button>
+    `;
+    list.appendChild(div);
+
+    safeOn(div.querySelector("button"), "click", () => {
+      financeState.payments = financeState.payments.filter(x => x.id !== p.id);
+      renderFinance();
+    });
+  });
+}
+
+function initFinanceForm(){
+  const form = $("#financeForm");
+  if(!form) return;
+
+  $("#pDate") && ($("#pDate").value = todayIso());
+
+  safeOn(form, "submit", (e) => {
+    e.preventDefault();
+
+    financeState.payments.push({
+      id: uid("pay"),
+      date: $("#pDate")?.value || todayIso(),
+      amount: Number($("#pAmount")?.value || 0),
+      payer: $("#pPayer")?.value || "",
+      split: $("#pSplit")?.value || "both",
+      category: $("#pCategory")?.value || "",
+      note: $("#pNote")?.value || "",
+      createdAt: new Date().toISOString()
+    });
+
+    form.reset();
+    $("#pDate") && ($("#pDate").value = todayIso());
+    renderFinance();
+  });
+}
+
+/* ========= export / import ========= */
+function download(name, obj){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(
+    new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" })
+  );
+  a.download = name;
+  a.click();
+}
+
+safeOn($("#btnExportTasks"), "click", () => download("tasks.json", taskState));
+safeOn($("#btnExportFinance"), "click", () => download("finance.json", financeState));
+
+safeOn($("#fileImportTasks"), "change", async (e) => {
+  const f = e.target.files?.[0];
+  if(!f) return;
+  taskState = JSON.parse(await f.text());
+  renderTasks();
+});
+
+safeOn($("#fileImportFinance"), "change", async (e) => {
+  const f = e.target.files?.[0];
+  if(!f) return;
+  financeState = JSON.parse(await f.text());
+  renderFinance();
+});
+
+/* ========= init ========= */
+(async function init(){
+  initTabs();
+  initTaskForm();
+  initFinanceForm();
+
+  taskState = await loadJson("./tasks.json", taskState);
+  financeState = await loadJson("./finance.json", financeState);
+
+  renderTasks();
+  renderFinance();
+})();
