@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "updatedAt": "2025-12-27T00:00:00+09:00",
+  "payments": [
+    {
+      "id": "p_001",
+      "date": "2025-12-20",
+      "amount": 5800,
+      "payer": "うて",
+      "split": "both",
+      "category": "食費",
+      "note": "スーパー"
+    }
+  ]
+}
