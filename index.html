@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>同棲タスク & 家計</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="./style.css" />
+
+  <!-- iOS Safari対策 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div class="title">
+        <h1>同棲タスク & 家計</h1>
+        <p class="subtitle">GitHub Pagesで共有・JSON保存</p>
+      </div>
+
+      <div class="actions">
+        <button id="btnExportTasks" class="btn">タスクJSON書き出し</button>
+        <button id="btnExportFinance" class="btn">家計JSON書き出し</button>
+
+        <label class="btn ghost">
+          タスクJSON読み込み
+          <input id="fileImportTasks" type="file" accept="application/json" hidden />
+        </label>
+        <label class="btn ghost">
+          家計JSON読み込み
+          <input id="fileImportFinance" type="file" accept="application/json" hidden />
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <nav class="tabs">
+      <button class="tab active" data-tab="tasks">タスク</button>
+      <button class="tab" data-tab="finance">家計</button>
+    </nav>
+
+    <!-- ===== TASKS ===== -->
+    <section id="tab-tasks" class="tabpane show">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>タスク追加</h2>
+          <p class="muted">担当は自由入力・繰り返しは毎週設定可</p>
+        </div>
+
+        <datalist id="assigneeHints"></datalist>
+
+        <form id="taskForm" class="form">
+          <div class="grid">
+            <label>タスク名
+              <input id="fTitle" required maxlength="80" placeholder="例）ゴミ出し" />
+            </label>
+
+            <label>担当
+              <input id="fAssignee" list="assigneeHints" maxlength="24" placeholder="例）うて / 彼" />
+            </label>
+
+            <label>カテゴリ
+              <select id="fCategory">
+                <option>家事</option>
+                <option>買い物</option>
+                <option>手続き</option>
+                <option>お金</option>
+                <option>掃除</option>
+                <option>その他</option>
+              </select>
+            </label>
+
+            <label>期限
+              <input id="fDue" type="date" />
+            </label>
+
+            <label>優先度
+              <select id="fPriority">
+                <option>中</option>
+                <option>高</option>
+                <option>低</option>
+              </select>
+            </label>
+
+            <label>メモ
+              <input id="fNote" maxlength="120" placeholder="例）朝8:30まで" />
+            </label>
+          </div>
+
+          <div class="repeatbox">
+            <label class="checkline">
+              <input id="fRepeatOn" type="checkbox" /> 繰り返し（毎週）
+            </label>
+
+            <div id="repeatWeekly" class="repeat-weekly">
+              <span class="muted">曜日：</span>
+              <label class="chip"><input type="checkbox" value="MO" class="wd">月</label>
+              <label class="chip"><input type="checkbox" value="TU" class="wd">火</label>
+              <label class="chip"><input type="checkbox" value="WE" class="wd">水</label>
+              <label class="chip"><input type="checkbox" value="TH" class="wd">木</label>
+              <label class="chip"><input type="checkbox" value="FR" class="wd">金</label>
+              <label class="chip"><input type="checkbox" value="SA" class="wd">土</label>
+              <label class="chip"><input type="checkbox" value="SU" class="wd">日</label>
+
+              <span class="muted" style="margin-left:8px;">開始日：</span>
+              <input id="fRepeatStart" type="date" />
+            </div>
+          </div>
+
+          <div class="row">
+            <button class="btn primary" type="submit">追加</button>
+            <button class="btn ghost" type="button" id="btnReset">クリア</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>タスク一覧</h2>
+        </div>
+
+        <div id="stats" class="stats"></div>
+        <div id="list" class="list"></div>
+      </section>
+    </section>
+
+    <!-- ===== FINANCE ===== -->
+    <section id="tab-finance" class="tabpane">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>家計追加</h2>
+        </div>
+
+        <datalist id="personHints"></datalist>
+
+        <form id="financeForm" class="form">
+          <div class="grid financegrid">
+            <label>日付<input id="pDate" type="date" required /></label>
+            <label>金額<input id="pAmount" type="number" min="0" required /></label>
+            <label>支払った人<input id="pPayer" list="personHints" required /></label>
+
+            <label>対象
+              <select id="pSplit">
+                <option value="both">ふたり（折半）</option>
+                <option value="me">私だけ</option>
+                <option value="partner">彼だけ</option>
+              </select>
+            </label>
+
+            <label>カテゴリ
+              <select id="pCategory">
+                <option>家賃</option>
+                <option>食費</option>
+                <option>日用品</option>
+                <option>光熱費</option>
+                <option>通信費</option>
+                <option>外食</option>
+                <option>その他</option>
+              </select>
+            </label>
+
+            <label>メモ<input id="pNote" /></label>
+          </div>
+
+          <div class="row">
+            <button class="btn primary" type="submit">追加</button>
+            <button class="btn ghost" type="button" id="btnResetPay">クリア</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>家計サマリ</h2>
+        </div>
+
+        <div id="financeStats" class="stats"></div>
+        <div id="settlement" class="settlement"></div>
+        <div id="payList" class="list"></div>
+      </section>
+    </section>
+
+    <footer class="footer muted">
+      <p>
+        画面編集 → JSON書き出し → GitHubで <code>tasks.json</code> / <code>finance.json</code> を更新
+      </p>
+    </footer>
+  </main>
+
+  <!-- エラーデバッグ（iPhone用） -->
+  <script>
+    window.addEventListener('error', e => {
+      alert('JS error: ' + e.message);
+    });
+    window.addEventListener('unhandledrejection', e => {
+      alert('Promise error: ' + (e.reason?.message || e.reason));
+    });
+  </script>
+
+  <!-- JS -->
+  <script src="./app.js"></script>
+</body>
+</html>
